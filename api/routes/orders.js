@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 
 const Order = require('../models/order');
 const Product = require('../models/product');
-const product = require('../models/product');
+// const product = require('../models/product');
 //const { default: mongoose } = require('mongoose');
 
 router.get('/', (req, res, next) => {
