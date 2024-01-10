@@ -10,6 +10,7 @@ const orderRoutes = require('./api/routes/orders');
 mongoose.connect('mongodb+srv://mhzaman999:' + process.env.MONGO_ATLAS_PW + '@node-rest-shop.z9j0toe.mongodb.net/?retryWrites=true&w=majority');
 
 app.use(morgan('dev'));
+app.use('/uploads', express.static('uploads'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -18,7 +19,7 @@ app.use((req, res, next) => {
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     if (req.method === 'OPTIONS') {
         res.header("Access-Control-Allow-Methods", 'PUT, POST, PATCH, DELETE, GET');
-        return res.status(200).json({});       
+        return res.status(200).json({});
     }
     next();
 });
@@ -39,6 +40,5 @@ app.use((error, req, res, next) => {
         }
     });
 });
-
 
 module.exports = app;
