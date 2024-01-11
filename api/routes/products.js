@@ -3,6 +3,9 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const multer = require('multer');
 
+const Product = require('../models/product');
+const checkAuth = require('../middleware/check_auth');
+
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -12,8 +15,6 @@ const storage = multer.diskStorage({
         cb(null, new Date().toISOString().replace(/:/g, "-") + "_" + file.originalname);
     }
 });
-
-
 
 const fileFilter = (req, file, cb) => {
     if (file.mimetype === 'image/jpg' || file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
@@ -45,8 +46,6 @@ attributes of images sent
 }
 */
 
-const Product = require('../models/product');
-
 router.get('/', (req, res, next) => {
     Product.find()
         .select('name price _id productImage')
@@ -75,7 +74,34 @@ router.get('/', (req, res, next) => {
         });
 });
 
-router.post('/', upload.single('productImage'), (req, res, next) => {
+router.get('/:productId', (req, res, next) => {
+    const id = req.params.productId;
+    Product.findById(id)
+        .select('name price _id productImage')
+        .exec()
+        .then(doc => {
+            if (doc) {
+                console.log(doc);
+                res.status(200).json({
+                    product: doc,
+                    request: {
+                        type: 'GET',
+                        url: 'http://localhost:3000/products'
+                    }
+                });
+            } else {
+                res.status(404).json({
+                    message: "No data found on the Id"
+                })
+            }
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json(err);
+        });
+});
+
+router.post('/', checkAuth, upload.single('productImage'), (req, res, next) => {
     const correctedPath = req.file.path.replace(/\\/, '/');
     const product = new Product({
         _id: new mongoose.Types.ObjectId(),
@@ -108,34 +134,7 @@ router.post('/', upload.single('productImage'), (req, res, next) => {
         });
 });
 
-router.get('/:productId', (req, res, next) => {
-    const id = req.params.productId;
-    Product.findById(id)
-        .slect('name price _id productImage')
-        .exec()
-        .then(doc => {
-            if (doc) {
-                console.log(doc);
-                res.status(200).json({
-                    product: doc,
-                    request: {
-                        type: 'GET',
-                        url: 'http://localhost:3000/products'
-                    }
-                });
-            } else {
-                res.status(404).json({
-                    message: "No data found on the Id"
-                })
-            }
-        })
-        .catch(err => {
-            console.log(err);
-            res.status(500).json(err);
-        });
-});
-
-router.patch('/:param', (req, res, next) => {
+router.patch('/:param', checkAuth, (req, res, next) => {
     const param = req.params.param;
     const updateOps = {};
     const idRegex = /^[0-9a-fA-F]{24}$/;
@@ -158,7 +157,7 @@ router.patch('/:param', (req, res, next) => {
             });
     } else {
         const productName = param;
-        const newPrice = req.body ? req.body.newPrice : undefined;
+        const newPrice = req.body.newPrice;
 
         if (newPrice === undefined) {
             return res.status(400).json({
@@ -183,9 +182,9 @@ router.patch('/:param', (req, res, next) => {
     }
 });
 
-router.delete('/:productId', (req, res, next) => {
+router.delete('/:productId', checkAuth, (req, res, next) => {
     const id = req.params.productId;
-    Product.delete({ _id: id })
+    Product.deleteOne({ _id: id })
         .exec()
         .then(result => {
             res.status(200).json(result)
@@ -196,7 +195,7 @@ router.delete('/:productId', (req, res, next) => {
         });
 });
 
-router.delete('/', (req, res, next) => {
+router.delete('/', checkAuth, (req, res, next) => {
     Product.deleteMany({})
         .exec()
         .then(result => {
